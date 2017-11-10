@@ -8,12 +8,12 @@ import (
 	"fmt"
 	"log"
 	"math/rand"
-	"net/http"
 	"net/url"
+	"os"
 	"regexp"
 	"strconv"
 
-	"github.com/tuotoo/qrcode"
+	"github.com/mdp/qrterminal"
 )
 
 func (c *WeixinClient) Login() error {
@@ -25,10 +25,7 @@ func (c *WeixinClient) Login() error {
 		return errors.New("empty uuid")
 	}
 	log.Printf("get uuid:%s", uuid)
-	err = c.getQR(uuid)
-	if err != nil {
-		return fmt.Errorf("get qrcode err:%s", err)
-	}
+	qrterminal.Generate("https://login.weixin.qq.com/l/"+uuid, qrterminal.L, os.Stdout)
 	loginInfo, err := c.checkLogin(uuid)
 	if err != nil {
 		return fmt.Errorf("check login err:%s", err)
@@ -74,23 +71,6 @@ func (c *WeixinClient) getQRuuid() (string, error) {
 	return ss[2], nil
 }
 
-func (c *WeixinClient) getQR(uuid string) error {
-	req, err := http.NewRequest("GET", "https://login.weixin.qq.com/qrcode/"+uuid, nil)
-	if err != nil {
-		return err
-	}
-	rsp, err := c.httpClient.Do(req)
-	if err != nil {
-		return err
-	}
-	defer rsp.Body.Close()
-	qrmatrix, err := qrcode.Decode(rsp.Body)
-	if err != nil {
-		return fmt.Errorf("decode qrcode err:%s", err)
-	}
-	return PrintQrcode(qrmatrix)
-}
-
 func (c *WeixinClient) checkLogin(uuid string) (*LoginInfo, error) {
 	tip := 1
 	for {
@@ -131,7 +111,6 @@ func (c *WeixinClient) checkLogin(uuid string) (*LoginInfo, error) {
 		}
 	}
 	return nil, errors.New("check login loop exit")
-
 }
 
 func (c *WeixinClient) getLoginInfo(str string) (*LoginInfo, error) {
@@ -152,6 +131,9 @@ func (c *WeixinClient) getLoginInfo(str string) (*LoginInfo, error) {
 	err = d.Decode(&loginInfo)
 	if err != nil {
 		return nil, err
+	}
+	if loginInfo.Ret != 0 {
+		return nil, fmt.Errorf("get login info err:%d,message:%s", loginInfo.Ret, loginInfo.Message)
 	}
 	if loginInfo.PassTicket == "" || loginInfo.Skey == "" || loginInfo.Wxsid == "" || loginInfo.Wxuin == "" {
 		return nil, fmt.Errorf("get invaild login info:%s", loginInfo)
@@ -181,6 +163,7 @@ func (c *WeixinClient) webInit() error {
 		User struct {
 			UserName string
 		}
+		SyncKey *SyncKey
 	}
 	err = c.httpClient.PostAsJson("https://wx.qq.com/cgi-bin/mmwebwx-bin/webwxinit?"+params.Encode(), "application/json;charset=UTF-8", bytes.NewReader(data), &result)
 	if err != nil {
@@ -190,6 +173,7 @@ func (c *WeixinClient) webInit() error {
 		return fmt.Errorf("get result:%d,errmsg:%s", result.BaseResponse.Ret, result.BaseResponse.ErrMsg)
 	}
 	c.loginInfo.UserName = result.User.UserName
+	c.loginInfo.SyncKey = result.SyncKey
 	return nil
 }
 
@@ -217,10 +201,7 @@ func (c *WeixinClient) showMobileLogin() error {
 		return err
 	}
 	var result struct {
-		BaseResponse struct {
-			Ret    int
-			ErrMsg string
-		}
+		BaseResponse *BaseResponse
 	}
 	err = c.httpClient.PostAsJson("https://wx.qq.com/cgi-bin/mmwebwx-bin/webwxstatusnotify?"+params.Encode(), "application/json;charset=UTF-8", bytes.NewReader(data), &result)
 	if err != nil {

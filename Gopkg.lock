@@ -2,10 +2,16 @@
 
 
 [[projects]]
+  name = "github.com/mdp/qrterminal"
+  packages = ["."]
+  revision = "39c97d9923c8839fed476cd8647718a92af5fa2f"
+  version = "v0.1.1"
+
+[[projects]]
   branch = "master"
-  name = "github.com/maruel/rs"
-  packages = [".","internal/gf256"]
-  revision = "2c81c4312fe4ee48bed510bdc37ddd499d2d9e9a"
+  name = "github.com/mdp/rsc"
+  packages = ["gf256","qr","qr/coding"]
+  revision = "90f07065088deccf50b28eb37c93dad3078c0f3c"
 
 [[projects]]
   branch = "master"
@@ -13,15 +19,9 @@
   packages = ["."]
   revision = "8f4bfa5b961cb3a8f6f9e560d3ecd2db207dbaef"
 
-[[projects]]
-  branch = "master"
-  name = "github.com/tuotoo/qrcode"
-  packages = ["."]
-  revision = "6cbfb834f9f328f3d3c2e44a50cdcaa330466e4c"
-
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "95721ebe21dcf37b3df5d60a8330ef33e357b399bfcaa8ea1a5a7d0b18d1ed1d"
+  inputs-digest = "af6262bc5fd6af22565a08ae2981f4095b213247758ee532105a2eabc8134352"
   solver-name = "gps-cdcl"
   solver-version = 1
